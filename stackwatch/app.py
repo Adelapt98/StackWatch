@@ -9,7 +9,7 @@ STATIC=Path(__file__).parent/'static'
 class Handler(BaseHTTPRequestHandler):
  def send_body(self,body,mime='application/json; charset=utf-8',status=200):
   if isinstance(body,str):body=body.encode('utf-8')
-  self.send_response(status);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(body)));self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(body)
+  self.send_response(status);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(body)));self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(body)
  def do_GET(self):
   parsed=urlparse(self.path);path=parsed.path
   files={'/':('index.html','text/html; charset=utf-8'),'/style.css':('style.css','text/css; charset=utf-8'),'/app.js':('app.js','text/javascript; charset=utf-8')}
