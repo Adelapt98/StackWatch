@@ -1,0 +1,8 @@
+[
+  {"id":"apache/airflow","name":"Apache Airflow","category":"Orchestration"},
+  {"id":"dagster-io/dagster","name":"Dagster","category":"Orchestration"},
+  {"id":"dbt-labs/dbt-core","name":"dbt Core","category":"Transformation"},
+  {"id":"apache/spark","name":"Apache Spark","category":"Processing"},
+  {"id":"duckdb/duckdb","name":"DuckDB","category":"Database"},
+  {"id":"pandas-dev/pandas","name":"pandas","category":"Processing"}
+]
