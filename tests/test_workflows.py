@@ -3,6 +3,7 @@ from unittest.mock import patch
 from stackwatch import ingest,product
 from stackwatch.db import connection,execute
 from stackwatch.archive import export_to_s3
+from stackwatch.code_frequency import collect_code_frequency,validate as validate_code,Unsupported
 
 CATALOG=[{'id':'example/alpha','name':'Alpha','category':'Data'}]
 WEEK=7*86400
@@ -45,5 +46,24 @@ class WorkflowTests(unittest.TestCase):
   class Stub:
    def put_object(self,**kwargs):self.args=kwargs
   stub=Stub();result=export_to_s3('test','weekly.csv',stub);self.assertEqual(result['rows'],5);self.assertIn(b'example/alpha',stub.args['Body'])
+ def test_daily_counts_persist_and_update(self):
+  ingest.collect(self.payload);ingest.collect(self.payload)
+  with connection() as db:
+   self.assertEqual(execute(db,'SELECT COUNT(*) FROM daily_activity').fetchone()[0],35)
+ def test_code_frequency_records_additions_and_deletions(self):
+  with patch('stackwatch.code_frequency.catalog',return_value=CATALOG):
+   result=collect_code_frequency(lambda repo:[[1000000,42,-7]])
+  self.assertEqual(result['success'],1)
+  with connection() as db:self.assertEqual(execute(db,'SELECT additions,deletions FROM code_changes').fetchone(),(42,7))
+ def test_code_frequency_unsupported_and_validation(self):
+  def unsupported(repo):raise Unsupported('not available')
+  with patch('stackwatch.code_frequency.catalog',return_value=CATALOG):self.assertEqual(collect_code_frequency(unsupported)['unsupported'],1)
+  with self.assertRaises(ValueError):validate_code([[10,1,2]])
+  with self.assertRaises(ValueError):validate_code([[10,1,-2],[10,4,-1]])
+ def test_daily_details_and_matching_code_week(self):
+  ingest.collect(self.payload)
+  with patch('stackwatch.code_frequency.catalog',return_value=CATALOG):collect_code_frequency(lambda repo:[[1000000+4*WEEK,20,-5]])
+  w=product.create_workspace('Team');product.set_repositories(w,['example/alpha']);item=product.overview(w,1000000+5*WEEK+1)['repositories'][0]
+  self.assertEqual(len(item['daily']),7);self.assertEqual(item['daily'][0]['commits'],1);self.assertEqual(item['code_change'],{'additions':20,'deletions':5})
 
 if __name__=='__main__':unittest.main()

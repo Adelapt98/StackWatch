@@ -48,10 +48,17 @@ def overview(workspace_id,now_ts=None):
   rows=execute(db,'SELECT repo,week,commits,fetched_at FROM weekly_activity ORDER BY week').fetchall()
   runs=execute(db,'SELECT id,started_at,finished_at,status,success,pending,failed FROM runs ORDER BY started_at DESC LIMIT 5').fetchall()
   fetches=execute(db,'SELECT repo,status,detail FROM fetch_log WHERE run_id=(SELECT id FROM runs ORDER BY started_at DESC LIMIT 1)').fetchall()
+  days=execute(db,'SELECT repo,day,commits FROM daily_activity ORDER BY day').fetchall()
+  changes=execute(db,'SELECT repo,week,additions,deletions FROM code_changes ORDER BY week').fetchall()
+  code_logs=execute(db,'SELECT repo,status,detail,fetched_at FROM code_fetch_log ORDER BY fetched_at').fetchall()
  groups={}
  for repo,week,count,fetched in rows:
   if week+604800<=stamp:groups.setdefault(repo,[]).append({'week':int(week),'commits':int(count),'fetched_at':fetched})
  latest={r[0]:{'status':r[1],'detail':r[2]} for r in fetches};result=[]
+ day_groups={};change_groups={};code_status={}
+ for repo,day,count in days:day_groups.setdefault(repo,{})[int(day)]=int(count)
+ for repo,week,added,removed in changes:change_groups.setdefault(repo,{})[int(week)]={'additions':int(added),'deletions':int(removed)}
+ for repo,status,detail,fetched_at in code_logs:code_status[repo]={'status':status,'detail':detail,'fetched_at':fetched_at}
  for repo in space['repos']:
   if repo not in reference:continue
   values=groups.get(repo,[]);tail=values[-5:];contiguous=len(tail)==5 and all(tail[i]['week']-tail[i-1]['week']==604800 for i in range(1,5))
@@ -59,5 +66,7 @@ def overview(workspace_id,now_ts=None):
   baseline=sum(x['commits'] for x in tail[:4])/4 if contiguous else None
   change=round((tail[-1]['commits']-baseline)*100/baseline,1) if contiguous and fresh and baseline else None
   signal='unavailable' if change is None else 'increased' if change>=50 else 'decreased' if change<=-50 else 'steady'
-  result.append({**reference[repo],'latest_week':tail[-1]['week'] if tail else None,'latest_count':tail[-1]['commits'] if tail else None,'baseline':baseline,'change_pct':change,'signal':signal,'fresh':fresh,'contiguous':contiguous,'history':values[-12:],'source':latest.get(repo,{'status':'not fetched','detail':''})})
+  latest_week=tail[-1]['week'] if tail else None
+  daily=[{'day':latest_week+i*86400,'commits':day_groups.get(repo,{}).get(latest_week+i*86400)} for i in range(7)] if latest_week is not None else []
+  result.append({**reference[repo],'latest_week':latest_week,'latest_count':tail[-1]['commits'] if tail else None,'baseline':baseline,'change_pct':change,'signal':signal,'fresh':fresh,'contiguous':contiguous,'history':values[-52:],'daily':daily,'code_change':change_groups.get(repo,{}).get(latest_week),'code_source':code_status.get(repo,{'status':'not fetched','detail':''}),'source':latest.get(repo,{'status':'not fetched','detail':''})})
  return {'workspace':space,'repositories':result,'runs':[dict(zip(('id','started_at','finished_at','status','success','pending','failed'),r)) for r in runs]}

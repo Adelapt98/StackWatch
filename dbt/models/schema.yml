@@ -4,6 +4,8 @@ sources:
     schema: public
     tables:
       - name: weekly_activity
+      - name: daily_activity
+      - name: code_changes
 models:
   - name: stg_weekly_activity
     columns:

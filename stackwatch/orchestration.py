@@ -1,6 +1,7 @@
 from dagster import Definitions,asset,define_asset_job,AssetSelection,ScheduleDefinition
 from .ingest import collect,quality
 from .product import workspaces,overview
+from .code_frequency import collect_code_frequency
 
 @asset(group_name='collection')
 def repository_activity(context):
@@ -11,6 +12,11 @@ def repository_activity(context):
 @asset(group_name='quality')
 def data_quality(repository_activity):return quality(repository_activity['id'])
 
+@asset(group_name='collection', description='Collect aggregate additions and deletions where GitHub provides them.')
+def code_frequency(context):
+ result=collect_code_frequency();context.log.info('Code frequency collection: %s',result)
+ return result
+
 @asset(group_name='reporting')
 def workspace_reports(context,data_quality):
  spaces=workspaces();count=sum(len(overview(w['id'])['repositories']) for w in spaces)
@@ -20,5 +26,6 @@ def workspace_reports(context,data_quality):
 collection=define_asset_job('collect_repository_activity',selection=AssetSelection.assets(repository_activity))
 quality_job=define_asset_job('check_data_quality',selection=AssetSelection.assets(data_quality))
 reports=define_asset_job('prepare_workspace_reports',selection=AssetSelection.assets(workspace_reports))
+code_job=define_asset_job('collect_code_frequency',selection=AssetSelection.assets(code_frequency))
 daily=define_asset_job('daily_stackwatch',selection=AssetSelection.all())
-defs=Definitions(assets=[repository_activity,data_quality,workspace_reports],jobs=[collection,quality_job,reports,daily],schedules=[ScheduleDefinition(job=daily,cron_schedule='15 6 * * *',execution_timezone='UTC')])
+defs=Definitions(assets=[repository_activity,code_frequency,data_quality,workspace_reports],jobs=[collection,code_job,quality_job,reports,daily],schedules=[ScheduleDefinition(job=daily,cron_schedule='15 6 * * *',execution_timezone='UTC')])

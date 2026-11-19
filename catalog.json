@@ -4,5 +4,7 @@
   {"id":"dbt-labs/dbt-core","name":"dbt Core","category":"Transformation"},
   {"id":"apache/spark","name":"Apache Spark","category":"Processing"},
   {"id":"duckdb/duckdb","name":"DuckDB","category":"Database"},
-  {"id":"pandas-dev/pandas","name":"pandas","category":"Processing"}
+  {"id":"pandas-dev/pandas","name":"pandas","category":"Processing"},
+  {"id":"duckdb/dbt-duckdb","name":"dbt-duckdb","category":"Transformation"},
+  {"id":"pallets/click","name":"Click","category":"Developer tools"}
 ]

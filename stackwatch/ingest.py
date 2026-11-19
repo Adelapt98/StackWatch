@@ -30,7 +30,9 @@ def validate(payload):
   if not isinstance(item,dict):raise ValueError('Invalid week')
   week=item.get('week');total=item.get('total')
   if not isinstance(week,int) or isinstance(week,bool) or week<0 or not isinstance(total,int) or isinstance(total,bool) or total<0 or week in seen:raise ValueError('Invalid or duplicate weekly count')
-  seen.add(week);records.append((week,total))
+  days=item.get('days')
+  if days is not None and (not isinstance(days,list) or len(days)!=7 or any(not isinstance(v,int) or isinstance(v,bool) or v<0 for v in days)):raise ValueError('Invalid daily counts')
+  seen.add(week);records.append((week,total,days))
  if not records:raise ValueError('No weekly observations returned')
  return records
 
@@ -43,7 +45,10 @@ def collect(fetcher=None):
    if stopped:raise RateLimited('Skipped after rate limit')
    rows=validate(fetcher(repo))
    with connection() as db:
-    for week,total in rows:execute(db,'INSERT INTO weekly_activity(repo,week,commits,fetched_at) VALUES(?,?,?,?) ON CONFLICT(repo,week) DO UPDATE SET commits=excluded.commits,fetched_at=excluded.fetched_at',(repo,week,total,now))
+    for week,total,days in rows:
+     execute(db,'INSERT INTO weekly_activity(repo,week,commits,fetched_at) VALUES(?,?,?,?) ON CONFLICT(repo,week) DO UPDATE SET commits=excluded.commits,fetched_at=excluded.fetched_at',(repo,week,total,now))
+     if days is not None:
+      for i,count in enumerate(days):execute(db,'INSERT INTO daily_activity(repo,day,commits,fetched_at) VALUES(?,?,?,?) ON CONFLICT(repo,day) DO UPDATE SET commits=excluded.commits,fetched_at=excluded.fetched_at',(repo,week+i*86400,count,now))
    state='success'
   except Pending as exc:state='pending';detail=str(exc)
   except RateLimited as exc:stopped=True;detail=str(exc)

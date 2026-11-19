@@ -5,6 +5,9 @@ from .config import database_url
 
 SCHEMA=[
  'CREATE TABLE IF NOT EXISTS weekly_activity (repo TEXT NOT NULL, week BIGINT NOT NULL, commits INTEGER NOT NULL CHECK(commits>=0), fetched_at TEXT NOT NULL, PRIMARY KEY(repo,week))',
+ 'CREATE TABLE IF NOT EXISTS daily_activity (repo TEXT NOT NULL, day BIGINT NOT NULL, commits INTEGER NOT NULL CHECK(commits>=0), fetched_at TEXT NOT NULL, PRIMARY KEY(repo,day))',
+ 'CREATE TABLE IF NOT EXISTS code_changes (repo TEXT NOT NULL, week BIGINT NOT NULL, additions BIGINT NOT NULL, deletions BIGINT NOT NULL, fetched_at TEXT NOT NULL, PRIMARY KEY(repo,week))',
+ 'CREATE TABLE IF NOT EXISTS code_fetch_log (run_id TEXT NOT NULL, repo TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL, fetched_at TEXT NOT NULL)',
  'CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, started_at TEXT NOT NULL, finished_at TEXT, status TEXT NOT NULL, success INTEGER NOT NULL DEFAULT 0, pending INTEGER NOT NULL DEFAULT 0, failed INTEGER NOT NULL DEFAULT 0)',
  'CREATE TABLE IF NOT EXISTS fetch_log (run_id TEXT NOT NULL, repo TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL)',
  'CREATE TABLE IF NOT EXISTS quality (run_id TEXT NOT NULL, repo TEXT NOT NULL, weeks INTEGER NOT NULL, latest_week BIGINT, status TEXT NOT NULL)',
