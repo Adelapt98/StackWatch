@@ -1,0 +1,8 @@
+name: stackwatch
+version: '1.0.0'
+config-version: 2
+profile: stackwatch
+model-paths: ['models']
+models:
+  stackwatch:
+    +materialized: view

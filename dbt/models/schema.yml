@@ -1,0 +1,15 @@
+version: 2
+sources:
+  - name: raw
+    schema: public
+    tables:
+      - name: weekly_activity
+models:
+  - name: stg_weekly_activity
+    columns:
+      - name: repo
+        tests: [not_null]
+      - name: week
+        tests: [not_null]
+      - name: commits
+        tests: [not_null]

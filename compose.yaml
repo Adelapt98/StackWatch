@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: stackwatch
+      POSTGRES_USER: stackwatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - stackwatch_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stackwatch -d stackwatch"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+volumes:
+  stackwatch_data:
